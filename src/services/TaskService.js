@@ -38,7 +38,6 @@ const getAllTask = async (req, res) => {
 
         const { tasks } = project
 
-        console.log(tasks)
         return res.status(200).json(tasks)
     } catch (error) {
         return res.status(400).json({ error: error.message });
@@ -49,10 +48,18 @@ const updateTask = async (req, res) => {
     const taskId = req.params.id
     try {
         validationRequestTask(req.body)
-        const task = await Task.findByIdAndUpdate(taskId, req.body, { new: true })
-        if (!task) return res.status(404).json({message:"Task not found"});
+        
+        const project = await Project.findOne({tasks: taskId}).populate('tasks')
+        if (!project) return res.status(404).json({message:"Project not found"});
+        
+        const taskIndex = project.tasks.indexOf(taskId);
+        project.tasks.splice(taskIndex, 1)
+
         validationTimeOverlaps(project, req.body)
 
+        const task = await Task.findByIdAndUpdate(taskId, req.body, { new: true })
+        if (!task) return res.status(404).json({message:"Task not found"});
+        
         return res.status(200).json(task)
     } catch (error) {
         return res.status(400).json({ error: error.message });
